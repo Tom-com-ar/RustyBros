@@ -6,7 +6,9 @@ Editor de video de escritorio con Tauri 2, Rust, React y Vite.
 
 - RB1: ventana principal con preview, timeline, panel de efectos y panel de exportacion.
 - RB2: importacion de MP4, MOV, AVI y MKV con nombre, formato, tamano, duracion y resolucion.
-- Tauri: command Rust `get_video_metadata` preparado para el flujo nativo.
+- RB3: seleccion de inicio y fin sobre la timeline, reproduccion limitada y command Rust `trim_video`.
+- RB4: grayscale, sepia, blur, sharpen, pixelate y glitch con previsualizacion y command Rust `apply_video_effect`.
+- Tauri: commands Rust para metadatos, recorte y efectos; FFmpeg instalado para el procesamiento local.
 - Fallback web: selector HTML y arrastrar/soltar.
 
 ## Preparar el entorno

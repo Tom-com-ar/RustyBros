@@ -4,6 +4,16 @@ import "./App.css";
 
 const ACCEPTED_TYPES = ["video/mp4", "video/quicktime", "video/x-msvideo", "video/x-matroska"];
 const ACCEPTED_EXTENSIONS = [".mp4", ".mov", ".avi", ".mkv"];
+const MIN_TRIM_GAP = 0.1;
+const EFFECTS = [
+  { key: "original", label: "Original", filter: "none" },
+  { key: "grayscale", label: "Grayscale", filter: "grayscale(1)" },
+  { key: "sepia", label: "Sepia", filter: "sepia(1)" },
+  { key: "blur", label: "Blur", filter: "blur(2px)" },
+  { key: "sharpen", label: "Sharpen", filter: "contrast(1.16) saturate(1.08)" },
+  { key: "pixelate", label: "Pixelate", filter: "contrast(1.12)" },
+  { key: "glitch", label: "Glitch", filter: "hue-rotate(24deg) saturate(1.7) contrast(1.15)" },
+];
 
 const formatBytes = (bytes) => {
   if (!bytes) return "0 B";
@@ -11,7 +21,6 @@ const formatBytes = (bytes) => {
   const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
   return `${(bytes / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`;
 };
-
 const formatTime = (seconds) => {
   if (!Number.isFinite(seconds)) return "00:00";
   const minutes = Math.floor(seconds / 60).toString().padStart(2, "0");
@@ -29,13 +38,13 @@ function Icon({ name, size = 18 }) {
     film: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M8 4v5M16 4v5M8 15v5M16 15v5" /></>,
     sliders: <><path d="M4 6h16M4 12h16M4 18h16" /><circle cx="8" cy="6" r="2" /><circle cx="15" cy="12" r="2" /><circle cx="10" cy="18" r="2" /></>,
     export: <><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></>,
-    settings: <><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 1.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-2.5V20a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.8-1.8.1-.1A1.7 1.7 0 0 0 8 15a1.7 1.7 0 0 0-1.6-1H6.2v-2.5h.2A1.7 1.7 0 0 0 8 10a1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.8-1.8.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.2h2.5V5a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.8 1.8-.1.1A1.7 1.7 0 0 0 19.4 10a1.7 1.7 0 0 0 1.6 1h.2v2.5H21a1.7 1.7 0 0 0-1.6 1.5Z" /></>,
-    folder: <><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2h8.5A1.5 1.5 0 0 1 21 8.5v8A1.5 1.5 0 0 1 19.5 18h-15A1.5 1.5 0 0 1 3 16.5v-10Z" /></>,
+    settings: <><circle cx="12" cy="12" r="3.5" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 1.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-2.5V20a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.8-1.8.1-.1A1.7 1.7 0 0 0 8 15a1.7 1.7 0 0 0-1.6-1H6.2v-2.5h.2A1.7 1.7 0 0 0 8 10a1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.8-1.8.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.2h2.5V5a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.8 1.8-.1.1A1.7 1.7 0 0 0 19.4 10a1.7 1.7 0 0 0 1.6 1h.2v2.5H21a1.7 1.7 0 0 0-1.6 1.5Z" /></>,
+    folder: <path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2h8.5A1.5 1.5 0 0 1 21 8.5v8A1.5 1.5 0 0 1 19.5 18h-15A1.5 1.5 0 0 1 3 16.5v-10Z" />,
     check: <path d="m5 12 4 4L19 6" />,
     clock: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7v5l3 2" /></>,
     more: <><circle cx="5" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="1" fill="currentColor" stroke="none" /></>,
   };
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
 }
 
 function App() {
@@ -45,136 +54,83 @@ function App() {
   const [videoUrl, setVideoUrl] = useState("");
   const [metadata, setMetadata] = useState(null);
   const [currentTime, setCurrentTime] = useState(0);
+  const [trimStart, setTrimStart] = useState(0);
+  const [trimEnd, setTrimEnd] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeTool, setActiveTool] = useState("media");
-  const [selectedEffect, setSelectedEffect] = useState("Original");
+  const [selectedEffect, setSelectedEffect] = useState("original");
   const [status, setStatus] = useState("Listo para importar");
   const [isDragging, setIsDragging] = useState(false);
-
-  const effects = ["Original", "Brillo", "Contraste", "Saturación", "Desenfoque"];
-  const progress = metadata?.duration ? Math.min((currentTime / metadata.duration) * 100, 100) : 0;
+  const [isProcessing, setIsProcessing] = useState(false);
   const timelineMarkers = useMemo(() => [0, 25, 50, 75, 100], []);
-
+  const duration = metadata?.duration || 0;
+  const progress = duration ? Math.min((currentTime / duration) * 100, 100) : 0;
+  const startPercent = duration ? (trimStart / duration) * 100 : 0;
+  const endPercent = duration ? (trimEnd / duration) * 100 : 100;
+  const effectData = EFFECTS.find((effect) => effect.key === selectedEffect) || EFFECTS[0];
   useEffect(() => () => videoUrl && URL.revokeObjectURL(videoUrl), [videoUrl]);
+  useEffect(() => { if (duration && trimEnd === 0) setTrimEnd(duration); }, [duration, trimEnd]);
 
   const readMetadataWithRust = async (file) => {
     if (!file?.path) return null;
-    try {
-      return await invoke("get_video_metadata", { path: file.path });
-    } catch {
-      return null;
-    }
+    try { return await invoke("get_video_metadata", { path: file.path }); } catch { return null; }
   };
-
   const importVideo = async (file) => {
     if (!file) return;
     const extension = `.${file.name.split(".").pop()?.toLowerCase()}`;
-    if (!ACCEPTED_TYPES.includes(file.type) && !ACCEPTED_EXTENSIONS.includes(extension)) {
-      setStatus("Formato no compatible. Usa MP4, MOV, AVI o MKV.");
-      return;
-    }
+    if (!ACCEPTED_TYPES.includes(file.type) && !ACCEPTED_EXTENSIONS.includes(extension)) { setStatus("Formato no compatible. Usa MP4, MOV, AVI o MKV."); return; }
     if (videoUrl) URL.revokeObjectURL(videoUrl);
-    const nextUrl = URL.createObjectURL(file);
-    setVideoFile(file);
-    setVideoUrl(nextUrl);
-    setCurrentTime(0);
-    setStatus("Leyendo metadatos...");
-    const nativeMetadata = await readMetadataWithRust(file);
-    setMetadata({
-      name: file.name,
-      format: extension.replace(".", "").toUpperCase(),
-      size: formatBytes(file.size),
-      duration: nativeMetadata?.duration || null,
-      width: nativeMetadata?.width || null,
-      height: nativeMetadata?.height || null,
-      source: nativeMetadata ? "Rust + FFprobe" : "WebView",
-    });
+    setVideoFile(file); setVideoUrl(URL.createObjectURL(file)); setCurrentTime(0); setTrimStart(0); setTrimEnd(0); setSelectedEffect("original"); setStatus("Leyendo metadatos...");
+    const native = await readMetadataWithRust(file);
+    setMetadata({ name: file.name, format: extension.replace(".", "").toUpperCase(), size: formatBytes(file.size), duration: native?.duration || null, width: native?.width || null, height: native?.height || null, source: native ? "Rust + FFprobe" : "WebView" });
     setStatus("Video importado correctamente");
   };
-
   const handleVideoLoaded = () => {
-    const element = videoRef.current;
-    if (!element) return;
-    setMetadata((current) => ({
-      ...current,
-      duration: current?.duration || element.duration,
-      width: current?.width || element.videoWidth,
-      height: current?.height || element.videoHeight,
-    }));
+    const element = videoRef.current; if (!element) return;
+    setMetadata((current) => ({ ...current, duration: current?.duration || element.duration, width: current?.width || element.videoWidth, height: current?.height || element.videoHeight }));
+    setTrimEnd((current) => current || element.duration);
   };
-
+  const syncVideoTime = () => {
+    const next = videoRef.current?.currentTime || 0;
+    if (trimEnd > trimStart && next >= trimEnd) { videoRef.current.pause(); videoRef.current.currentTime = trimEnd; setIsPlaying(false); setCurrentTime(trimEnd); } else setCurrentTime(next);
+  };
+  const seek = (value) => { const next = Math.max(0, Math.min(Number(value), duration || Number(value))); setCurrentTime(next); if (videoRef.current) videoRef.current.currentTime = next; };
   const togglePlayback = () => {
     if (!videoRef.current) return;
-    if (videoRef.current.paused) {
-      videoRef.current.play();
-      setIsPlaying(true);
-    } else {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    }
+    if (videoRef.current.paused) { if (currentTime < trimStart || currentTime >= trimEnd) { videoRef.current.currentTime = trimStart; setCurrentTime(trimStart); } videoRef.current.play(); setIsPlaying(true); }
+    else { videoRef.current.pause(); setIsPlaying(false); }
   };
-
-  const seek = (value) => {
-    const nextTime = Number(value);
-    setCurrentTime(nextTime);
-    if (videoRef.current) videoRef.current.currentTime = nextTime;
+  const updateTrimStart = (value) => { const next = Math.max(0, Math.min(Number(value), Math.max(trimEnd - MIN_TRIM_GAP, 0))); setTrimStart(next); if (currentTime < next) seek(next); };
+  const updateTrimEnd = (value) => { const next = Math.min(duration, Math.max(Number(value), trimStart + MIN_TRIM_GAP)); setTrimEnd(next); if (currentTime > next) seek(next); };
+  const resetTrim = () => { setTrimStart(0); setTrimEnd(duration); setStatus("Recorte restablecido"); };
+  const getOutputPath = (suffix) => videoFile?.path ? videoFile.path.replace(/\.[^/.]+$/, `_${suffix}.mp4`) : null;
+  const processTrim = async () => {
+    if (!duration) return;
+    if (!videoFile?.path) { setStatus("Recorte listo en la timeline. Rust necesita una ruta nativa para generar el archivo."); return; }
+    setIsProcessing(true);
+    try { await invoke("trim_video", { input: videoFile.path, output: getOutputPath("trimmed"), start: trimStart, end: trimEnd }); setStatus(`Recorte procesado con Rust: ${formatTime(trimEnd - trimStart)}`); }
+    catch (error) { setStatus(`Error en recorte: ${error}`); } finally { setIsProcessing(false); }
   };
-
-  const onDrop = (event) => {
-    event.preventDefault();
-    setIsDragging(false);
-    importVideo(event.dataTransfer.files?.[0]);
+  const selectEffect = async (effect) => {
+    setSelectedEffect(effect.key);
+    if (effect.key === "original") { setStatus("Efecto original restaurado"); return; }
+    if (!videoFile?.path) { setStatus(`Previsualización ${effect.label} activa. Rust procesará el archivo con una ruta nativa.`); return; }
+    setIsProcessing(true);
+    try { await invoke("apply_video_effect", { input: videoFile.path, output: getOutputPath(effect.key), effect: effect.key }); setStatus(`${effect.label} procesado con Rust + FFmpeg`); }
+    catch (error) { setStatus(`Error aplicando ${effect.label}: ${error}`); } finally { setIsProcessing(false); }
   };
+  const onDrop = (event) => { event.preventDefault(); setIsDragging(false); importVideo(event.dataTransfer.files?.[0]); };
 
-  return (
-    <div className="app-shell">
-      <header className="topbar">
-        <div className="brand"><span className="brand-mark"><Icon name="logo" size={22} /></span><span>Rusty<span className="brand-accent">Bros</span></span></div>
-        <div className="project-name"><span className="live-dot" />Proyecto sin título <span className="saved-label"><Icon name="check" size={13} /> Guardado</span></div>
-        <div className="top-actions"><button className="icon-button" aria-label="Configuración"><Icon name="settings" /></button><button className="avatar">TB</button></div>
-      </header>
-
-      <div className="workspace">
-        <aside className="sidebar">
-          <div className="sidebar-section-label">PROYECTO</div>
-          <nav className="tool-nav">
-            <button className={`tool-item ${activeTool === "media" ? "active" : ""}`} onClick={() => setActiveTool("media")}><Icon name="film" /><span>Medios</span><span className="tool-count">{videoFile ? 1 : 0}</span></button>
-            <button className={`tool-item ${activeTool === "effects" ? "active" : ""}`} onClick={() => setActiveTool("effects")}><Icon name="sliders" /><span>Efectos</span></button>
-            <button className={`tool-item ${activeTool === "export" ? "active" : ""}`} onClick={() => setActiveTool("export")}><Icon name="export" /><span>Exportar</span></button>
-          </nav>
-          <div className="sidebar-divider" />
-          <div className="sidebar-section-label">ARCHIVOS</div>
-          {videoFile ? <div className="file-row"><span className="file-icon"><Icon name="video" size={15} /></span><span className="file-info"><strong>{videoFile.name}</strong><small>Video importado</small></span><Icon name="more" size={17} /></div> : <div className="empty-files">Todavía no hay archivos</div>}
-          <div className="sidebar-footer"><div className="rust-badge"><span className="rust-spark">✦</span><span><strong>Potenciado por Rust</strong><small>Procesamiento local y seguro</small></span></div></div>
-        </aside>
-
-        <main className="editor-area">
-        <div className="editor-header"><div><span className="eyebrow">EDITOR DE VIDEO</span><h1>Tu espacio creativo</h1></div><div className="header-actions"><button className="secondary-button"><Icon name="folder" size={16} /> Abrir proyecto</button><button className="primary-button" onClick={() => inputRef.current?.click()}><Icon name="upload" size={16} /> Importar video</button><input ref={inputRef} type="file" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,.mp4,.mov,.avi,.mkv" hidden onChange={(event) => importVideo(event.target.files?.[0])} /></div></div>
-
-          <div className="editor-grid">
-            <section className="main-column">
-              <div className="preview-card">
-                <div className="card-topline"><span>PREVIEW</span><span className="preview-status"><span className="status-dot" /> {status}</span></div>
-                <div className={`video-stage ${isDragging ? "dragging" : ""}`} onDragOver={(event) => { event.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={onDrop}>
-                  {videoUrl ? <video ref={videoRef} src={videoUrl} onLoadedMetadata={handleVideoLoaded} onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime || 0)} onEnded={() => setIsPlaying(false)} /> : <div className="empty-preview"><div className="empty-preview-icon"><Icon name="upload" size={26} /></div><h2>Arrastra tu video aquí</h2><p>o selecciónalo desde tu equipo</p><button className="outline-button" onClick={() => inputRef.current?.click()}>Seleccionar archivo</button><small>MP4, MOV, AVI o MKV · hasta 2 GB</small></div>}
-                  {videoUrl && <div className="video-overlay"><span>{metadata?.format || "VIDEO"}</span><span>{metadata?.width && metadata?.height ? `${metadata.width} × ${metadata.height}` : "Analizando..."}</span></div>}
-                </div>
-                <div className="transport"><button className="transport-button" onClick={() => seek(Math.max(currentTime - 5, 0))}>−5</button><button className="play-button" onClick={togglePlayback}><Icon name={isPlaying ? "pause" : "play"} size={19} /></button><button className="transport-button" onClick={() => seek(Math.min(currentTime + 5, metadata?.duration || currentTime + 5))}>+5</button><span className="time-readout">{formatTime(currentTime)} <span>/</span> {formatTime(metadata?.duration)}</span><div className="transport-spacer" /><span className="zoom-label">100%</span><button className="icon-button"><Icon name="more" /></button></div>
-              </div>
-
-              <div className="timeline-card"><div className="timeline-header"><div><span className="eyebrow">SECUENCIA</span><strong>{videoFile ? videoFile.name : "Sin medios en la secuencia"}</strong></div><span className="timeline-duration"><Icon name="clock" size={14} /> {formatTime(metadata?.duration)}</span></div><div className="timeline-ruler">{timelineMarkers.map((marker) => <span key={marker} style={{ left: `${marker}%` }}>{formatTime((metadata?.duration || 0) * marker / 100)}</span>)}</div><div className="timeline-track"><div className="track-label"><span className="track-color video-color" /><span>Video 1</span></div><div className="track-content">{videoFile ? <div className="clip" style={{ width: `${Math.max(progress, 18)}%` }}><span>{videoFile.name}</span><i /><i /><i /></div> : <div className="track-placeholder">Importa un video para comenzar</div>}<div className="playhead" style={{ left: `${progress}%` }} /></div></div><div className="timeline-track audio-track"><div className="track-label"><span className="track-color audio-color" /><span>Audio 1</span></div><div className="track-content"><div className="audio-placeholder" /></div></div><input className="timeline-scrubber" type="range" min="0" max={metadata?.duration || 1} step="0.01" value={currentTime} onChange={(event) => seek(event.target.value)} /></div>
-            </section>
-
-            <aside className="inspector"><div className="inspector-tabs"><button className={activeTool === "effects" ? "active" : ""} onClick={() => setActiveTool("effects")}>Efectos</button><button className={activeTool === "export" ? "active" : ""} onClick={() => setActiveTool("export")}>Exportar</button></div>{activeTool === "export" ? <ExportPanel /> : <><div className="inspector-heading"><div><span className="eyebrow">AJUSTES RÁPIDOS</span><h2>Mejora tu video</h2></div><span className="pro-pill">RB1</span></div><div className="effect-grid">{effects.map((effect) => <button key={effect} className={`effect-button ${selectedEffect === effect ? "selected" : ""}`} onClick={() => setSelectedEffect(effect)}><span className={`effect-preview effect-${effect.toLowerCase()}`} /><span>{effect}</span>{selectedEffect === effect && <Icon name="check" size={14} />}</button>)}</div><div className="inspector-divider" /><div className="metadata-heading"><span className="eyebrow">METADATOS · RB2</span>{metadata && <span className="metadata-ok"><Icon name="check" size={13} /> Leído</span>}</div>{metadata ? <div className="metadata-list"><div><span>Archivo</span><strong title={metadata.name}>{metadata.name}</strong></div><div><span>Formato</span><strong>{metadata.format}</strong></div><div><span>Resolución</span><strong>{metadata.width && metadata.height ? `${metadata.width} × ${metadata.height}` : "Pendiente"}</strong></div><div><span>Duración</span><strong>{formatTime(metadata.duration)}</strong></div><div><span>Tamaño</span><strong>{metadata.size}</strong></div><div><span>Origen</span><strong>{metadata.source}</strong></div></div> : <div className="metadata-empty"><Icon name="video" size={18} /><span>Importa un video para ver sus datos técnicos.</span></div>}</>}</aside>
-          </div>
-        </main>
-      </div>
-    </div>
-  );
+  return <div className="app-shell">
+    <header className="topbar"><div className="brand"><span className="brand-mark"><Icon name="logo" size={22} /></span><span>Rusty<span className="brand-accent">Bros</span></span></div><div className="project-name"><span className="live-dot" />Proyecto sin título <span className="saved-label"><Icon name="check" size={13} /> Guardado</span></div><div className="top-actions"><button className="icon-button" aria-label="Configuración"><Icon name="settings" /></button><button className="avatar">TB</button></div></header>
+    <div className="workspace"><aside className="sidebar"><div className="sidebar-section-label">PROYECTO</div><nav className="tool-nav"><button className={`tool-item ${activeTool === "media" ? "active" : ""}`} onClick={() => setActiveTool("media")}><Icon name="film" /><span>Medios</span><span className="tool-count">{videoFile ? 1 : 0}</span></button><button className={`tool-item ${activeTool === "effects" ? "active" : ""}`} onClick={() => setActiveTool("effects")}><Icon name="sliders" /><span>Efectos</span><span className="tool-count">RB4</span></button><button className={`tool-item ${activeTool === "export" ? "active" : ""}`} onClick={() => setActiveTool("export")}><Icon name="export" /><span>Exportar</span></button></nav><div className="sidebar-divider" /><div className="sidebar-section-label">ARCHIVOS</div>{videoFile ? <div className="file-row"><span className="file-icon"><Icon name="video" size={15} /></span><span className="file-info"><strong>{videoFile.name}</strong><small>Video importado</small></span><Icon name="more" size={17} /></div> : <div className="empty-files">Todavía no hay archivos</div>}<div className="sidebar-footer"><div className="rust-badge"><span className="rust-spark">✦</span><span><strong>Potenciado por Rust</strong><small>Procesamiento local y seguro</small></span></div></div></aside>
+      <main className="editor-area"><div className="editor-header"><div><span className="eyebrow">EDITOR DE VIDEO</span><h1>Tu espacio creativo</h1></div><div className="header-actions"><button className="secondary-button"><Icon name="folder" size={16} /> Abrir proyecto</button><button className="primary-button" onClick={() => inputRef.current?.click()}><Icon name="upload" size={16} /> Importar video</button><input ref={inputRef} type="file" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,.mp4,.mov,.avi,.mkv" hidden onChange={(event) => importVideo(event.target.files?.[0])} /></div></div>
+        <div className="editor-grid"><section className="main-column"><div className="preview-card"><div className="card-topline"><span>PREVIEW</span><span className="preview-status"><span className="status-dot" /> {isProcessing ? "Procesando con Rust..." : status}</span></div><div className={`video-stage ${isDragging ? "dragging" : ""}`} onDragOver={(event) => { event.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={onDrop}>{videoUrl ? <video ref={videoRef} src={videoUrl} style={{ filter: effectData.filter }} onLoadedMetadata={handleVideoLoaded} onTimeUpdate={syncVideoTime} onEnded={() => setIsPlaying(false)} /> : <div className="empty-preview"><div className="empty-preview-icon"><Icon name="upload" size={26} /></div><h2>Arrastra tu video aquí</h2><p>o selecciónalo desde tu equipo</p><button className="outline-button" onClick={() => inputRef.current?.click()}>Seleccionar archivo</button><small>MP4, MOV, AVI o MKV · hasta 2 GB</small></div>}{videoUrl && <div className="video-overlay"><span>{metadata?.format || "VIDEO"}</span><span>{metadata?.width && metadata?.height ? `${metadata.width} × ${metadata.height}` : "Analizando..."}</span></div>}</div><div className="transport"><button className="transport-button" onClick={() => seek(Math.max(currentTime - 5, trimStart))}>−5</button><button className="play-button" onClick={togglePlayback}><Icon name={isPlaying ? "pause" : "play"} size={19} /></button><button className="transport-button" onClick={() => seek(Math.min(currentTime + 5, trimEnd || currentTime + 5))}>+5</button><span className="time-readout">{formatTime(currentTime)} <span>/</span> {formatTime(duration)}</span><div className="transport-spacer" /><span className="zoom-label">100%</span><button className="icon-button"><Icon name="more" /></button></div></div>
+        <div className="timeline-card"><div className="timeline-header"><div><span className="eyebrow">SECUENCIA · RB3</span><strong>{videoFile ? videoFile.name : "Sin medios en la secuencia"}</strong></div><span className="timeline-duration"><Icon name="clock" size={14} /> Selección {formatTime(Math.max(trimEnd - trimStart, 0))}</span></div><div className="timeline-ruler">{timelineMarkers.map((marker) => <span key={marker} style={{ left: `${marker}%` }}>{formatTime(duration * marker / 100)}</span>)}</div><div className="timeline-track"><div className="track-label"><span className="track-color video-color" /><span>Video 1</span></div><div className="track-content trim-content">{videoFile ? <div className="clip" style={{ width: "100%" }}><span>{videoFile.name}</span><i /><i /><i /></div> : <div className="track-placeholder">Importa un video para comenzar</div>}<div className="trim-selection" style={{ left: `${startPercent}%`, width: `${Math.max(endPercent - startPercent, 0)}%` }} /><div className="playhead" style={{ left: `${progress}%` }} /></div></div><div className="trim-controls"><div><span>IN</span><strong>{formatTime(trimStart)}</strong></div><div className="trim-range-wrap"><input aria-label="Inicio del recorte" className="trim-range trim-range-start" type="range" min="0" max={duration || 1} step="0.01" value={trimStart} onChange={(event) => updateTrimStart(event.target.value)} /><input aria-label="Fin del recorte" className="trim-range trim-range-end" type="range" min="0" max={duration || 1} step="0.01" value={trimEnd || duration || 0} onChange={(event) => updateTrimEnd(event.target.value)} /></div><div><span>OUT</span><strong>{formatTime(trimEnd)}</strong></div><button className="secondary-button compact-button" onClick={resetTrim}>Restablecer</button><button className="primary-button compact-button" disabled={isProcessing || !videoFile} onClick={processTrim}>Procesar recorte</button></div><div className="timeline-track audio-track"><div className="track-label"><span className="track-color audio-color" /><span>Audio 1</span></div><div className="track-content"><div className="audio-placeholder" /></div></div><input className="timeline-scrubber" type="range" min="0" max={duration || 1} step="0.01" value={currentTime} onChange={(event) => seek(event.target.value)} /></div></section>
+          <aside className="inspector"><div className="inspector-tabs"><button className={activeTool === "effects" ? "active" : ""} onClick={() => setActiveTool("effects")}>Efectos</button><button className={activeTool === "export" ? "active" : ""} onClick={() => setActiveTool("export")}>Exportar</button></div>{activeTool === "export" ? <ExportPanel /> : <><div className="inspector-heading"><div><span className="eyebrow">EFECTOS · RB4</span><h2>Procesa tu video</h2></div><span className="pro-pill">RUST</span></div><div className="effect-grid">{EFFECTS.map((effect) => <button key={effect.key} className={`effect-button ${selectedEffect === effect.key ? "selected" : ""}`} onClick={() => selectEffect(effect)}><span className="effect-preview" style={{ filter: effect.filter }} /><span>{effect.label}</span>{selectedEffect === effect.key && <Icon name="check" size={14} />}</button>)}</div><div className="effect-footer"><span>{isProcessing ? "Procesando..." : "Previsualización instantánea"}</span><span className="metadata-ok"><Icon name="check" size={13} /> FFmpeg</span></div><div className="inspector-divider" /><div className="metadata-heading"><span className="eyebrow">METADATOS · RB2</span>{metadata && <span className="metadata-ok"><Icon name="check" size={13} /> Leído</span>}</div>{metadata ? <div className="metadata-list"><div><span>Archivo</span><strong title={metadata.name}>{metadata.name}</strong></div><div><span>Formato</span><strong>{metadata.format}</strong></div><div><span>Resolución</span><strong>{metadata.width && metadata.height ? `${metadata.width} × ${metadata.height}` : "Pendiente"}</strong></div><div><span>Duración</span><strong>{formatTime(metadata.duration)}</strong></div><div><span>Tamaño</span><strong>{metadata.size}</strong></div><div><span>Origen</span><strong>{metadata.source}</strong></div></div> : <div className="metadata-empty"><Icon name="video" size={18} /><span>Importa un video para ver sus datos técnicos.</span></div>}</>}</aside></div></main></div>
+  </div>;
 }
 
-function ExportPanel() {
-  return <div className="export-panel"><div className="inspector-heading"><div><span className="eyebrow">SALIDA</span><h2>Exportar proyecto</h2></div><span className="pro-pill">RB5</span></div><label>Formato<select defaultValue="MP4"><option>MP4</option><option>WebM</option><option>GIF</option></select></label><label>Calidad<select defaultValue="Alta"><option>Alta</option><option>Media</option><option>Rápida</option></select></label><label>Resolución<select defaultValue="Original"><option>Original</option><option>1080p</option><option>720p</option></select></label><button className="primary-button export-button"><Icon name="export" size={16} /> Exportar video</button><p className="panel-note">El procesamiento se realizará localmente con Rust + FFmpeg.</p></div>;
-}
+function ExportPanel() { return <div className="export-panel"><div className="inspector-heading"><div><span className="eyebrow">SALIDA</span><h2>Exportar proyecto</h2></div><span className="pro-pill">RB5</span></div><label>Formato<select defaultValue="MP4"><option>MP4</option><option>WebM</option><option>GIF</option></select></label><label>Calidad<select defaultValue="Alta"><option>Alta</option><option>Media</option><option>Rápida</option></select></label><label>Resolución<select defaultValue="Original"><option>Original</option><option>1080p</option><option>720p</option></select></label><button className="primary-button export-button"><Icon name="export" size={16} /> Exportar video</button><p className="panel-note">El procesamiento se realizará localmente con Rust + FFmpeg.</p></div>; }
 
 export default App;
