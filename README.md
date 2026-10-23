@@ -10,6 +10,9 @@ Editor de video de escritorio con Tauri 2, Rust, React y Vite.
 - RB4: grayscale, sepia, blur, sharpen, pixelate y glitch con previsualizacion y command Rust `apply_video_effect`.
 - RB5: exportacion MP4, WebM y GIF con calidad, resolucion y FPS configurables dentro de `exports/`.
 - RB6: barra de progreso en tiempo real mediante eventos Rust `export-progress` durante FFmpeg.
+- RB7: nivel 1 jugable en Phaser con jugador, enemigos, monedas y bandera de fin.
+- RB8: gravedad, colisiones Arcade, salto, movimiento y animaciones visuales de sprites.
+- RB9: HUD con score, vidas, monedas y tiempo, sincronizado con el estado React.
 - Tauri: commands Rust para metadatos, preparacion de archivos, recorte, efectos y exportacion; FFmpeg instalado para el procesamiento local.
 - Fallback web: selector HTML y arrastrar/soltar.
 
