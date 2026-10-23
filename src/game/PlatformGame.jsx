@@ -20,7 +20,7 @@ function buildTexture(scene, key, width, height, draw) {
 }
 
 class RustyLevel extends Phaser.Scene {
-  constructor(onStateChange) {
+  constructor(onStateChange, initialReward = {}, initialActive = true) {
     super("RustyLevel");
     this.onStateChange = onStateChange;
     this.score = 0;
@@ -29,9 +29,24 @@ class RustyLevel extends Phaser.Scene {
     this.elapsed = 0;
     this.completed = false;
     this.gameOver = false;
+    this.editorRewards = Number(initialReward.count) || 0;
+    this.editorRewardPoints = Number(initialReward.points) || 0;
+    this.score = this.editorRewardPoints;
+    this.lastReward = null;
+    this.initialActive = initialActive;
+    this.gameActive = initialActive;
+    this.levelProgress = 0;
   }
 
   create() {
+    this.score = this.editorRewardPoints;
+    this.coins = 0;
+    this.lives = 3;
+    this.elapsed = 0;
+    this.completed = false;
+    this.gameOver = false;
+    this.lastReward = null;
+    this.levelProgress = 5;
     this.createTextures();
     this.physics.world.setBounds(0, 0, LEVEL_WIDTH, GAME_HEIGHT);
     this.cameras.main.setBounds(0, 0, LEVEL_WIDTH, GAME_HEIGHT);
@@ -92,6 +107,8 @@ class RustyLevel extends Phaser.Scene {
     this.onKeyUp = (event) => { this.pressedKeys.delete(event.code || event.key); };
     window.addEventListener("keydown", this.onKeyDown, { passive: false });
     window.addEventListener("keyup", this.onKeyUp);
+    this.onEditorReward = (event) => this.applyEditorReward(event.detail || {});
+    window.addEventListener("rustybros:editor-reward", this.onEditorReward);
 
     this.hud = this.add.text(22, 18, "", {
       fontFamily: "DM Mono, monospace",
@@ -109,9 +126,15 @@ class RustyLevel extends Phaser.Scene {
       strokeThickness: 5,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(20);
 
+    if (this.editorRewards > 0) {
+      this.message.setText(`+${this.editorRewardPoints} pts · Recompensas del editor`);
+      this.time.delayedCall(1800, () => { if (!this.completed && !this.gameOver) this.message.setText("Llega a la bandera"); });
+    }
+
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
     this.updateHud();
-    this.emitState("Jugando");
+    this.emitState(this.editorRewards ? "Recompensas del editor aplicadas" : "Jugando");
+    this.gameActive = this.initialActive;
   }
 
   createTextures() {
@@ -154,7 +177,7 @@ class RustyLevel extends Phaser.Scene {
   }
 
   update(_time, delta) {
-    if (!this.player || this.completed || this.gameOver) return;
+    if (!this.gameActive || !this.player || this.completed || this.gameOver) return;
     this.elapsed += delta / 1000;
     const left = this.pressedKeys.has("ArrowLeft") || this.pressedKeys.has("KeyA") || this.cursors.left.isDown || this.keys.left.isDown;
     const right = this.pressedKeys.has("ArrowRight") || this.pressedKeys.has("KeyD") || this.cursors.right.isDown || this.keys.right.isDown;
@@ -179,7 +202,15 @@ class RustyLevel extends Phaser.Scene {
       enemy.setFlipX(enemy.body.velocity.x < 0);
     });
 
-    if (this.player.y > GAME_HEIGHT + 60) this.loseLife();
+    if (this.player.y > GAME_HEIGHT + 60) {
+      this.loseLife();
+      if (this.gameOver) return;
+    }
+    const nextProgress = Math.round(Math.min(Math.max((this.player.x / 2290) * 100, 0), 100));
+    if (nextProgress !== this.levelProgress) {
+      this.levelProgress = nextProgress;
+      this.emitState("Jugando");
+    }
     this.updateHud();
   }
 
@@ -188,6 +219,19 @@ class RustyLevel extends Phaser.Scene {
     this.coins += 1;
     this.score += 25;
     this.emitState("Moneda recogida");
+  }
+
+  applyEditorReward({ type, label, points = 0 }) {
+    const rewardPoints = Number(points) || 0;
+    this.editorRewards += 1;
+    this.editorRewardPoints += rewardPoints;
+    this.score += rewardPoints;
+    this.lastReward = { type: type || "editor", label: label || "Recompensa del editor", points: rewardPoints };
+    this.message.setText(`+${rewardPoints} pts · ${this.lastReward.label}`);
+    this.emitState(`Recompensa: ${this.lastReward.label}`, { reward: this.lastReward });
+    this.time.delayedCall(1800, () => {
+      if (!this.completed && !this.gameOver) this.message.setText("Llega a la bandera");
+    });
   }
 
   hitEnemy(player, enemy) {
@@ -227,31 +271,45 @@ class RustyLevel extends Phaser.Scene {
   }
 
   restartLevel() {
+    this.initialActive = true;
+    this.gameActive = true;
     this.scene.restart();
+  }
+
+  setPlayActive(active) {
+    this.gameActive = active;
+    if (active && this.pressedKeys) this.pressedKeys.clear();
   }
 
   shutdown() {
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);
+    window.removeEventListener("rustybros:editor-reward", this.onEditorReward);
   }
 
   updateHud() {
     this.hud.setText(`SCORE  ${this.score.toString().padStart(4, "0")}    VIDAS  ${"♥".repeat(Math.max(this.lives, 0))}    MONEDAS  ${this.coins}    TIEMPO  ${formatGameTime(this.elapsed)}`);
   }
 
-  emitState(status) {
-    this.onStateChange({ score: this.score, lives: this.lives, coins: this.coins, time: this.elapsed, status, completed: this.completed, gameOver: this.gameOver });
+  emitState(status, extra = {}) {
+    this.onStateChange({ score: this.score, lives: this.lives, coins: this.coins, time: this.elapsed, levelProgress: this.levelProgress, status: this.gameOver ? "Game over" : status, completed: this.completed, gameOver: this.gameOver, editorRewards: this.editorRewards, ...extra });
   }
 }
 
-export default function PlatformGame() {
+export default function PlatformGame({ onProgress, editorReward = {}, isActive = true }) {
   const mountRef = useRef(null);
   const gameRef = useRef(null);
+  const progressRef = useRef(onProgress);
   const [state, setState] = useState({ score: 0, lives: 3, coins: 0, time: 0, status: "Preparado", completed: false, gameOver: false });
+
+  useEffect(() => { progressRef.current = onProgress; }, [onProgress]);
 
   useEffect(() => {
     if (!mountRef.current) return undefined;
-    const scene = new RustyLevel(setState);
+    const scene = new RustyLevel((nextState) => {
+      setState(nextState);
+      progressRef.current?.(nextState);
+    }, editorReward, isActive);
     gameRef.current = new Phaser.Game({
       type: Phaser.AUTO,
       parent: mountRef.current,
@@ -269,9 +327,30 @@ export default function PlatformGame() {
     };
   }, []);
 
+  useEffect(() => {
+    let frameId;
+    let attempts = 0;
+    const syncSceneActivity = () => {
+      const scene = gameRef.current?.scene.getScene("RustyLevel");
+      if (!scene && attempts < 30) {
+        attempts += 1;
+        frameId = window.requestAnimationFrame(syncSceneActivity);
+        return;
+      }
+      if (!scene) return;
+      scene.setPlayActive?.(isActive);
+      if (isActive) {
+        scene.input.keyboard.enabled = true;
+        gameRef.current.scale?.refresh();
+      }
+    };
+    syncSceneActivity();
+    return () => { if (frameId) window.cancelAnimationFrame(frameId); };
+  }, [isActive]);
+
   return <section className="game-panel">
     <div className="game-card">
-      <div className="game-card-header"><div><span className="eyebrow">RB7 · RB8 · RB9</span><h2>RustyBros: Bahía Rust</h2><p>Completa el nivel, derrota enemigos y llega a la bandera.</p></div><span className="pro-pill">PHASER</span></div>
+      <div className="game-card-header"><div><span className="eyebrow">RB7 · RB8 · RB9 · RB10</span><h2>RustyBros: Bahía Rust</h2><p>Completa el nivel, derrota enemigos y gana recompensas del editor.</p></div><span className="pro-pill">PHASER</span></div>
       <div ref={mountRef} className="game-canvas" />
       <div className="game-controls"><span>← → / A D para moverte</span><span>↑ / ESPACIO para saltar</span><span>Gravedad y colisiones activas</span></div>
     </div>

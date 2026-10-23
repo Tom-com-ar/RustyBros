@@ -13,6 +13,8 @@ Editor de video de escritorio con Tauri 2, Rust, React y Vite.
 - RB7: nivel 1 jugable en Phaser con jugador, enemigos, monedas y bandera de fin.
 - RB8: gravedad, colisiones Arcade, salto, movimiento y animaciones visuales de sprites.
 - RB9: HUD con score, vidas, monedas y tiempo, sincronizado con el estado React.
+- RB10: aplicar efectos o exportar videos envía recompensas al juego, sumando puntos y mostrando una notificación.
+- RB11: el juego envía progreso al editor y actualiza el panel de logros con monedas, enemigos, recompensas y finalización.
 - Tauri: commands Rust para metadatos, preparacion de archivos, recorte, efectos y exportacion; FFmpeg instalado para el procesamiento local.
 - Fallback web: selector HTML y arrastrar/soltar.
 
