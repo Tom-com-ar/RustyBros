@@ -99,6 +99,11 @@ function App() {
     }).then((removeListener) => { unsubscribe = removeListener; }).catch(() => {});
     return () => { if (unsubscribe) unsubscribe(); };
   }, []);
+  useEffect(() => {
+    invoke("get_game_state").then((savedState) => {
+      if (savedState) setGameProgress(savedState);
+    }).catch(() => {});
+  }, []);
 
   const readMetadataWithRust = async (file) => {
     if (!file?.path) return null;
@@ -178,6 +183,7 @@ function App() {
   };
   const handleGameProgress = (progressState) => {
     setGameProgress(progressState);
+    invoke("update_game_state", { nextState: progressState }).catch(() => {});
     setGameAchievements((current) => current.map((achievement) => {
       const unlocked = achievement.unlocked || (achievement.id === "coin" && progressState.coins > 0) || (achievement.id === "enemy" && progressState.score >= 100) || (achievement.id === "editor" && progressState.editorRewards > 0) || (achievement.id === "finish" && progressState.completed);
       return unlocked === achievement.unlocked ? achievement : { ...achievement, unlocked };

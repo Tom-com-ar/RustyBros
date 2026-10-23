@@ -1,7 +1,8 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter};
 
@@ -20,6 +21,48 @@ struct VideoMetadata {
 struct ExportProgress {
     progress: f64,
     status: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GameState {
+    score: i32,
+    lives: i32,
+    coins: i32,
+    time: f64,
+    level_progress: i32,
+    editor_rewards: i32,
+    status: String,
+    completed: bool,
+    game_over: bool,
+}
+
+impl Default for GameState {
+    fn default() -> Self {
+        Self {
+            score: 0,
+            lives: 3,
+            coins: 0,
+            time: 0.0,
+            level_progress: 0,
+            editor_rewards: 0,
+            status: "Preparado".to_string(),
+            completed: false,
+            game_over: false,
+        }
+    }
+}
+
+#[tauri::command]
+fn get_game_state(state: tauri::State<'_, Mutex<GameState>>) -> Result<GameState, String> {
+    state.lock().map(|current| current.clone()).map_err(|_| "No se pudo leer el estado compartido del juego".to_string())
+}
+
+#[tauri::command]
+fn update_game_state(next_state: GameState, state: tauri::State<'_, Mutex<GameState>>) -> Result<GameState, String> {
+    let mut current = state.lock().map_err(|_| "No se pudo actualizar el estado compartido del juego".to_string())?;
+    *current = next_state.clone();
+    Ok(next_state)
 }
 
 fn run_ffmpeg(args: &[&str]) -> Result<(), String> {
@@ -156,7 +199,8 @@ fn export_video(app: AppHandle, input: String, output: String, format: String, q
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![get_video_metadata, prepare_video_file, get_export_path, trim_video, apply_video_effect, export_video])
+        .manage(Mutex::new(GameState::default()))
+        .invoke_handler(tauri::generate_handler![get_video_metadata, prepare_video_file, get_export_path, trim_video, apply_video_effect, export_video, get_game_state, update_game_state])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
