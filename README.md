@@ -16,6 +16,8 @@ Editor de video de escritorio con Tauri 2, Rust, React y Vite.
 - RB10: aplicar efectos o exportar videos envía recompensas al juego, sumando puntos y mostrando una notificación.
 - RB11: el juego envía progreso al editor y actualiza el panel de logros con monedas, enemigos, recompensas y finalización.
 - RB12: estado compartido en Rust mediante `Mutex<GameState>` y los commands `get_game_state` y `update_game_state`.
+- RB13: empaquetado Tauri activado para generar instaladores Windows MSI y NSIS con `npm run tauri build` o `npm run build:installer`.
+- RB14: el instalador abre directamente RustyBros con el juego Phaser embebido; el editor de video sigue disponible desde Medios.
 - Tauri: commands Rust para metadatos, preparacion de archivos, recorte, efectos y exportacion; FFmpeg instalado para el procesamiento local.
 - Fallback web: selector HTML y arrastrar/soltar.
 

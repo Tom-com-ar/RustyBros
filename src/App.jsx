@@ -61,7 +61,7 @@ function App() {
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [activeTool, setActiveTool] = useState("media");
+  const [activeTool, setActiveTool] = useState("game");
   const [selectedEffect, setSelectedEffect] = useState("original");
   const [status, setStatus] = useState("Listo para importar");
   const [isDragging, setIsDragging] = useState(false);
